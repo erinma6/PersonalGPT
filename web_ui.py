@@ -64,12 +64,12 @@ def undo_upload_file(state_dict: Dict, history: List) -> Tuple[List, Dict]:
 def refresh_file_display(state_dict: Dict) -> List[str]:
     bot_backend = get_bot_backend(state_dict)
     work_dir = bot_backend.jupyter_work_dir
-    filenames = os.listdir(work_dir)
+    #filenames = os.listdir(work_dir)
     paths = []
-    for filename in filenames:
-        paths.append(
-            os.path.join(work_dir, filename)
-        )
+    # for filename in filenames:
+    #     paths.append(
+    #         os.path.join(work_dir, filename)
+    #     )
     return paths
 
 
@@ -125,20 +125,20 @@ if __name__ == '__main__':
         with gr.Tab("Chat"):
             chatbot = gr.Chatbot([], elem_id="chatbot", label="AI Data Worker", show_label=False,height=550)
             with gr.Row():
-                with gr.Column(scale=0.65):
+                with gr.Column(scale=0.95):
                     text_box = gr.Textbox(
                         show_label=False,
                         placeholder="Enter text and press enter, or upload a file",
                         container=False
                     )
-                with gr.Column(scale=0.12, min_width=0):
-                    file_upload_button = gr.UploadButton("📁Upload", file_types=['file'])
-                with gr.Column(scale=0.1, min_width=0):
-                    restart_button = gr.Button(value='🔄Restart')
-                with gr.Column(scale=0.13, min_width=0):
+                # with gr.Column(scale=0.12, min_width=0):
+                #     file_upload_button = gr.UploadButton("📁Upload", file_types=['file'])
+                # with gr.Column(scale=0.1, min_width=0):
+                #     restart_button = gr.Button(value='🔄Restart')
+                # with gr.Column(scale=0.13, min_width=0):
                     #radio = gr.Radio(choices=["R","python"], show_label=False, value="R", interactive=True)
-                    radio = gr.Dropdown(choices=["R","python"], show_label=False, value="R", interactive=True)
-                    radio.change(fn=switch_language, inputs=[state, radio])                    
+                    # radio = gr.Dropdown(choices=["R","python"], show_label=False, value="R", interactive=True)
+                    # radio.change(fn=switch_language, inputs=[state, radio])                    
         with gr.Tab("Files"):
             file_output = gr.Files()
 
@@ -148,28 +148,28 @@ if __name__ == '__main__':
         )
         txt_msg.then(fn=refresh_file_display, inputs=[state], outputs=[file_output])
         txt_msg.then(lambda: gr.update(interactive=True), None, [text_box], queue=False)
-        txt_msg.then(lambda: gr.Radio.update(interactive=False), None, [radio], queue=False)
+        #txt_msg.then(lambda: gr.Radio.update(interactive=False), None, [radio], queue=False)
 
-        file_msg = file_upload_button.upload(
-            add_file, [state, chatbot, file_upload_button], [chatbot], queue=False
-        ).then(
-            bot, [state, chatbot], chatbot
-        )
-        file_msg.then(lambda: gr.Radio.update(interactive=False), None, [radio], queue=False)
-        file_msg.then(fn=refresh_file_display, inputs=[state], outputs=[file_output])
+        # file_msg = file_upload_button.upload(
+        #     add_file, [state, chatbot, file_upload_button], [chatbot], queue=False
+        # ).then(
+        #     bot, [state, chatbot], chatbot
+        # )
+        # file_msg.then(lambda: gr.Radio.update(interactive=False), None, [radio], queue=False)
+        # file_msg.then(fn=refresh_file_display, inputs=[state], outputs=[file_output])
 
-        restart_button.click(
-            fn=restart_ui, inputs=[chatbot],
-            outputs=[chatbot, text_box, restart_button, file_upload_button, radio]
-        ).then(
-            fn=restart_bot_backend, inputs=[state], queue=False
-        ).then(
-            fn=refresh_file_display, inputs=[state], outputs=[file_output]
-        ).then(
-            fn=lambda: (gr.Textbox.update(interactive=True), gr.Button.update(interactive=True),
-                        gr.Button.update(interactive=True), gr.Radio.update(interactive=True)), 
-            inputs=None, outputs=[text_box, restart_button, file_upload_button, radio], queue=False
-        )
+        # restart_button.click(
+        #     fn=restart_ui, inputs=[chatbot],
+        #     outputs=[chatbot, text_box, restart_button, file_upload_button, radio]
+        # ).then(
+        #     fn=restart_bot_backend, inputs=[state], queue=False
+        # ).then(
+        #     fn=refresh_file_display, inputs=[state], outputs=[file_output]
+        # ).then(
+        #     fn=lambda: (gr.Textbox.update(interactive=True), gr.Button.update(interactive=True),
+        #                 gr.Button.update(interactive=True), gr.Radio.update(interactive=True)), 
+        #     inputs=None, outputs=[text_box, restart_button, file_upload_button, radio], queue=False
+        # )
 
         block.load(fn=initialization, inputs=[state])
 
