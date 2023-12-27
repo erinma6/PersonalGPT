@@ -141,7 +141,7 @@ if __name__ == '__main__':
                     # radio.change(fn=switch_language, inputs=[state, radio])                    
         with gr.Tab("Files"):
             file_output = gr.Files()
-
+ 
         # Components function binding
         txt_msg = text_box.submit(add_text, [state, chatbot, text_box], [chatbot, text_box], queue=False).then(
             bot, [state, chatbot], chatbot
