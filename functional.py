@@ -4,6 +4,19 @@ import time
 
 
 def chat_completion(bot_backend: BotBackend):
+    """
+    Completes a chat using the provided bot backend.
+
+    This function uses the bot backend to complete a chat. It first checks if the chosen model is available for the 
+    API key in the configuration. If the model is available, it creates a chat completion using the arguments provided 
+    in the bot backend.
+
+    Parameters:
+    bot_backend (BotBackend): The bot backend to use for the chat completion.
+
+    Returns:
+    openai.ChatCompletion: The response from the chat completion.
+    """
     model_choice = bot_backend.gpt_model_choice
     config = bot_backend.config
     kwargs_for_chat_completion = bot_backend.kwargs_for_chat_completion
@@ -15,6 +28,20 @@ def chat_completion(bot_backend: BotBackend):
 
 
 def add_function_response_to_bot_history(content_to_display, history, unique_id):
+    """
+    Adds the function response to the bot history.
+
+    This function separates the content to display into text and images and adds them to the history.
+    If an error occurs during the execution of the function, it is indicated in the history.
+
+    Parameters:
+    content_to_display (list): A list of tuples where each tuple contains a mark and a string. The mark indicates the type of the string (e.g., 'stdout', 'execute_result_text', 'display_text', 'execute_result_png', 'execute_result_jpeg', 'display_png', 'display_jpeg', 'error').
+    history (list): The history to which the function response is added. Each element in the history is a list containing a unique id and a string.
+    unique_id (str): The unique id for the function response.
+
+    Returns:
+    None
+    """
     images, text = [], []
 
     # terminal output
@@ -28,7 +55,6 @@ def add_function_response_to_bot_history(content_to_display, history, unique_id)
             else:
                 images.append(('jpg', out_str))
         elif mark == 'error':
-            text.append(delete_color_control_char(out_str))
             error_occurred = True
     text = '\n'.join(text).strip('\n')
     if error_occurred:
@@ -53,12 +79,21 @@ def add_function_response_to_bot_history(content_to_display, history, unique_id)
         )
 
 
-def parse_json(function_args: str, finished: bool):
+def parse_json(function_args: str, finished: bool) -> Union[str, None]:
     """
-    GPT may generate non-standard JSON format string, which contains '\n' in string value, leading to error when using
-    `json.loads()`.
-    Here we implement a parser to extract code directly from non-standard JSON string.
-    :return: code string if successfully parsed otherwise None
+    Parses a non-standard JSON string to extract code.
+
+    This function implements a custom parser to extract code from a JSON string that may not be in a standard format.
+    The parser uses a log to keep track of the parsing process. The log is a dictionary that records the occurrence of
+    certain characters and indices in the JSON string that are significant for the extraction of the code.
+
+    Parameters:
+    function_args (str): The function arguments in a JSON string.
+    finished (bool): A flag indicating whether the parsing is finished.
+
+    Returns:
+    str: The extracted code string if the parsing is successful.
+    None: If an exception occurs during the parsing process.
     """
     parser_log = {
         'met_begin_{': False,
