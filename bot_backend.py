@@ -3,30 +3,29 @@ import openai
 import os
 import copy
 import shutil
-from jupyter_backend import *
 from typing import *
 
 
 
-functions = [
-    {
-        "name": "execute_code",
-        "description": "This function allows you to execute ##worker_language## code and retrieve the terminal output. If the code "
-                       "generates image output, the function will return the text '[image]'. The code is sent to a "
-                       "Jupyter kernel for execution. The kernel will remain active after execution, retaining all "
-                       "variables in memory.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string",
-                    "description": "The code text"
-                }
-            },
-            "required": ["code"],
-        }
-    }
-]
+# functions = [
+#     {
+#         "name": "execute_code",
+#         "description": "This function allows you to execute ##worker_language## code and retrieve the terminal output. If the code "
+#                        "generates image output, the function will return the text '[image]'. The code is sent to a "
+#                        "Jupyter kernel for execution. The kernel will remain active after execution, retaining all "
+#                        "variables in memory.",
+#         "parameters": {
+#             "type": "object",
+#             "properties": {
+#                 "code": {
+#                     "type": "string",
+#                     "description": "The code text"
+#                 }
+#             },
+#             "required": ["code"],
+#         }
+#     }
+# ]
 
 system_msg ='''Act as Professor Synapse🧙🏾‍♂️, a conductor of expert agents. Your job is to support me in accomplishing my goals by finding alignment with me, then calling upon an expert agent perfectly suited to the task by initializing:
 
@@ -59,16 +58,6 @@ Rules:
 -Organize every output “🧙🏾‍♂️: [aligning on my goal],  [emoji]: [actionable response]
 -🧙🏾‍♂️, recommend save after each task is completed
 '''
-# system_msg = '''You are an AI code interpreter.
-# Your goal is to help users do a variety of jobs by executing ##worker_language## code.
-
-# You should:
-# 1. Comprehend the user's requirements carefully & to the letter.
-# 2. Give a brief description for what you plan to do & call the provided function to run code.
-# 3. Provide results analysis based on the execution output.
-# 4. If error occurred, try to fix it.
-
-# Note: If the user uploads a file, you will receive a system message "User uploaded a file: filename". Use the filename as the path in the code. '''
 
 with open('config.json') as f:
     config = json.load(f)
@@ -142,19 +131,13 @@ class BotBackend(GPTResponseLog):
     def __init__(self):
         super().__init__()
         self.unique_id = hash(id(self))
-        self.jupyter_work_dir = f'cache/work_dir_{self.unique_id}'
-        self.worker_language_choice = "R"
-        # self.jupyter_kernel = JupyterKernel(work_dir=self.jupyter_work_dir, worker_language=self.worker_language_choice)
-        self.jupyter_kernel = None
         self.gpt_model_choice = "GPT-4"
-        self.revocable_files = []
         self._init_conversation()
         self._init_api_config()
         self._init_kwargs_for_chat_completion()
 
     def _init_conversation(self):
-        # replace ##worker_language## in system_msg with self.worker_language_choice
-        system_msg_now = system_msg.replace("##worker_language##", self.worker_language_choice)
+        system_msg_now = system_msg
         first_system_msg = {'role': 'system', 'content': system_msg_now}
         if hasattr(self, 'conversation'):
             self.conversation.clear()
@@ -171,16 +154,10 @@ class BotBackend(GPTResponseLog):
         config_openai_api(api_type, api_base, api_version, api_key)
 
     def _init_kwargs_for_chat_completion(self):
-        # replace ##worker_language## in functions[0]['description'] with self.worker_language_choice
-        functions_now = functions
-        functions_now[0]['description'] = functions_now[0]['description'].replace("##worker_language##", self.worker_language_choice)
+        
         self.kwargs_for_chat_completion = {
             'stream': True,
-            'messages': self.conversation,
-            'functions': functions_now,
-            'function_call': 'auto'
-            # 'tools': functions_now,
-            # 'tool_choice': "auto"
+            'messages': self.conversation
         }
 
         model_name = self.config['model'][self.gpt_model_choice]['model_name']
@@ -190,11 +167,7 @@ class BotBackend(GPTResponseLog):
         else:
             self.kwargs_for_chat_completion['model'] = model_name
 
-    def _clear_all_files_in_work_dir(self):
-        for filename in os.listdir(self.jupyter_work_dir):
-            os.remove(
-                os.path.join(self.jupyter_work_dir, filename)
-            )
+    
 
     def add_gpt_response_content_message(self):
         self.conversation.append(
@@ -205,77 +178,17 @@ class BotBackend(GPTResponseLog):
         self.conversation.append(
             {'role': 'user', 'content': user_text}
         )
-        self.revocable_files.clear()
         self.update_finish_reason(finish_reason='new_input')
 
-    def add_file_message(self, path, bot_msg):
-        filename = os.path.basename(path)
-        work_dir = self.jupyter_work_dir
-
-        shutil.copy(path, work_dir)
-
-        gpt_msg = {'role': 'system', 'content': f'User uploaded a file: {filename}'}
-        self.conversation.append(gpt_msg)
-        self.revocable_files.append(
-            {
-                'bot_msg': bot_msg,
-                'gpt_msg': gpt_msg,
-                'path': os.path.join(work_dir, filename)
-            }
-        )
-
-    def add_function_call_response_message(self, function_response: str, save_tokens=True):
-        self.conversation.append(
-            {
-                "role": self.assistant_role_name,
-                "name": self.function_name,
-                "content": self.function_args_str
-            }
-        )
-
-        if save_tokens and len(function_response) > 500:
-            function_response = f'{function_response[:200]}\n[Output too much, the middle part output is omitted]\n ' \
-                                f'End part of output:\n{function_response[-200:]}'
-        self.conversation.append(
-            {
-                "role": "function",
-                "name": self.function_name,
-                "content": function_response,
-            }
-        )
-
-    def revoke_file(self):
-        if self.revocable_files:
-            file = self.revocable_files[-1]
-            bot_msg = file['bot_msg']
-            gpt_msg = file['gpt_msg']
-            path = file['path']
-
-            assert self.conversation[-1] is gpt_msg
-            del self.conversation[-1]
-
-            os.remove(path)
-
-            del self.revocable_files[-1]
-
-            return bot_msg
-        else:
-            return None
+    
 
     def update_gpt_model_choice(self, model_choice):
         self.gpt_model_choice = model_choice
         self._init_kwargs_for_chat_completion()
 
-    def update_language_choice(self, worker_language):
-        self.worker_language_choice = worker_language
-        #self.jupyter_kernel = JupyterKernel(work_dir=self.jupyter_work_dir, worker_language=self.worker_language_choice)
-        self.jupyter_kernel=None
-        self._init_conversation()
-        self._init_kwargs_for_chat_completion()
 
     def restart(self):
         self._clear_all_files_in_work_dir()
-        self.revocable_files.clear()
         self._init_conversation()
         self.reset_gpt_response_log_values()
-        self.jupyter_kernel.restart_jupyter_kernel()
+        

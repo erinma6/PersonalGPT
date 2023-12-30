@@ -2,8 +2,8 @@ from abc import ABCMeta, abstractmethod
 from functional import *
 
 
-working_code_str = "\n🔴Working:\n```##worker_language##\n{}\n```"
-working_code_str_green = "\n🟢Working:\n```##worker_language##\n{}\n```"
+# working_code_str = "\n🔴Working:\n```##worker_language##\n{}\n```"
+# working_code_str_green = "\n🟢Working:\n```##worker_language##\n{}\n```"
 
 class ChoiceStrategy(metaclass=ABCMeta):
     def __init__(self, choice):
@@ -53,18 +53,18 @@ class NameFunctionCallChoiceStrategy(ChoiceStrategy):
         return 'function_call' in self.delta and 'name' in self.delta['function_call']
 
     def execute(self, bot_backend: BotBackend, history: List, whether_exit: bool):
-        function_dict = bot_backend.jupyter_kernel.available_functions
+        #function_dict = bot_backend.jupyter_kernel.available_functions
         bot_backend.set_function_name(function_name=self.delta['function_call']['name'])
         bot_backend.copy_current_bot_history(bot_history=history)
-        if bot_backend.function_name not in function_dict:
-            history.append(
-                [
-                    None,
-                    f'GPT attempted to call a function that does '
-                    f'not exist: {bot_backend.function_name}\n '
-                ]
-            )
-            whether_exit = True
+        # if bot_backend.function_name not in function_dict:
+        #     history.append(
+        #         [
+        #             None,
+        #             f'GPT attempted to call a function that does '
+        #             f'not exist: {bot_backend.function_name}\n '
+        #         ]
+        #     )
+        #     whether_exit = True
 
         return history, whether_exit
 
@@ -84,21 +84,21 @@ class ArgumentsFunctionCallChoiceStrategy(ChoiceStrategy):
             solely of raw code text (not a JSON format).
             """
             temp_code_str = bot_backend.function_args_str
-            working_code_str_now = working_code_str.replace("##worker_language##", bot_backend.worker_language_choice)
-            bot_backend.update_display_code_block(
-                display_code_block=working_code_str_now.format(temp_code_str)
-            )
+            #working_code_str_now = working_code_str.replace("##worker_language##", bot_backend.worker_language_choice)
+            # bot_backend.update_display_code_block(
+            #     display_code_block=working_code_str_now.format(temp_code_str)
+            # )
             history = copy.deepcopy(bot_backend.bot_history)
             history[-1][1] += bot_backend.display_code_block
         else:
             temp_code_str = parse_json(function_args=bot_backend.function_args_str, finished=False)
             if temp_code_str is not None:
-                working_code_str_now = working_code_str.replace("##worker_language##", bot_backend.worker_language_choice)
-                bot_backend.update_display_code_block(
-                    display_code_block=working_code_str_now.format(
-                        temp_code_str
-                    )
-                )
+                #working_code_str_now = working_code_str.replace("##worker_language##", bot_backend.worker_language_choice)
+                # bot_backend.update_display_code_block(
+                #     display_code_block=working_code_str_now.format(
+                #         temp_code_str
+                #     )
+                # )
                 history = copy.deepcopy(bot_backend.bot_history)
                 history[-1][1] += bot_backend.display_code_block
 
@@ -120,10 +120,10 @@ class FinishReasonChoiceStrategy(ChoiceStrategy):
             try:
 
                 code_str = self.get_code_str(bot_backend)
-                working_code_str_green_now = working_code_str_green.replace("##worker_language##", bot_backend.worker_language_choice)
-                bot_backend.update_display_code_block(
-                    display_code_block=working_code_str_green_now.format(code_str)
-                )
+                # working_code_str_green_now = working_code_str_green.replace("##worker_language##", bot_backend.worker_language_choice)
+                # bot_backend.update_display_code_block(
+                #     display_code_block=working_code_str_green_now.format(code_str)
+                # )
                 history = copy.deepcopy(bot_backend.bot_history)
                 history[-1][1] += bot_backend.display_code_block
 
@@ -133,7 +133,7 @@ class FinishReasonChoiceStrategy(ChoiceStrategy):
                 ](code_str)
 
                 # add function call to conversion
-                bot_backend.add_function_call_response_message(function_response=text_to_gpt, save_tokens=True)
+                #bot_backend.add_function_call_response_message(function_response=text_to_gpt, save_tokens=True)
 
                 add_function_response_to_bot_history(
                     content_to_display=content_to_display, history=history, unique_id=bot_backend.unique_id
