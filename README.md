@@ -17,3 +17,7 @@ This package inspired by and builds upon the work of [ProfSynapse](https://githu
 ## Usage
 
 To use this package, you need to have Python installed on your machine. You can then clone this repository and run the `web_ui.py` script to start the chatbot interface.
+
+You will need an OpenAI key setup in your OS environment variables titled 'OPENAI_API_KEY'.
+
+All necessary packages are stored in 'requirements_full.txt'
