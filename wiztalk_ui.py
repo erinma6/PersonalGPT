@@ -1,4 +1,4 @@
-from response_parser import *
+from parse_response import *
 import gradio as gr
 
 # Initialize the state dictionary

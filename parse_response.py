@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from functional import *
+from functions import *
 
 class ChoiceStrategy(metaclass=ABCMeta):
     """
